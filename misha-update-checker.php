@@ -78,19 +78,19 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 
 			// do nothing if you're not getting plugin information right now
 			if( 'plugin_information' !== $action ) {
-				return false;
+				return $res;
 			}
 
 			// do nothing if it is not our plugin
 			if( $this->plugin_slug !== $args->slug ) {
-				return false;
+				return $res;
 			}
 
 			// get updates
 			$remote = $this->request();
 
 			if( ! $remote ) {
-				return false;
+				return $res;
 			}
 
 			$res = new stdClass();
