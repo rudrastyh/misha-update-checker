@@ -153,7 +153,7 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 
 		}
 
-		public function purge(){
+		public function purge( $upgrader, $options ){
 
 			if (
 				$this->cache_allowed
