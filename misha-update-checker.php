@@ -22,6 +22,7 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 		public $version;
 		public $cache_key;
 		public $cache_allowed;
+    public $multisite;
 
 		public function __construct() {
 
@@ -29,6 +30,7 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 			$this->version = '1.0';
 			$this->cache_key = 'misha_custom_upd';
 			$this->cache_allowed = false;
+      $this->multisite = is_multisite();
 
 			add_filter( 'plugins_api', array( $this, 'info' ), 20, 3 );
 			add_filter( 'site_transient_update_plugins', array( $this, 'update' ) );
@@ -60,7 +62,16 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 					return false;
 				}
 
-				set_transient( $this->cache_key, $remote, DAY_IN_SECONDS );
+				if($this->multisite === true){
+
+                    set_site_transient( $this->cache_key, $remote, DAY_IN_SECONDS );
+
+                }
+                else {
+
+                    set_transient( $this->cache_key, $remote, DAY_IN_SECONDS );
+
+                }
 
 			}
 
@@ -161,7 +172,16 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 				&& 'plugin' === $options[ 'type' ]
 			) {
 				// just clean the cache when new plugin version is installed
-				delete_transient( $this->cache_key );
+				if($this->multisite === true){
+
+                    delete_site_transient( $this->cache_key );
+
+                }
+                else {
+
+                    delete_transient( $this->cache_key );
+
+                }
 			}
 
 		}
