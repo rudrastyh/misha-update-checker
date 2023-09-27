@@ -19,6 +19,7 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 	class mishaUpdateChecker{
 
 		public $plugin_slug;
+		public $plugin_basename_file;
 		public $version;
 		public $cache_key;
 		public $cache_allowed;
@@ -26,12 +27,13 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 		public function __construct() {
 
 			$this->plugin_slug = plugin_basename( __DIR__ );
+			$this->plugin_basename_file = plugin_basename( __FILE__ ); // misha-update-plugin/misha-update-plugin.php
 			$this->version = '1.0';
 			$this->cache_key = 'misha_custom_upd';
 			$this->cache_allowed = false;
 
 			add_filter( 'plugins_api', array( $this, 'info' ), 20, 3 );
-			add_filter( 'site_transient_update_plugins', array( $this, 'update' ) );
+			add_filter( 'pre_set_site_transient_update_plugins', array( $this, 'update' ) );  //Fix: Update hook that this not called that much often and make it compatible with autoupdate-feature
 			add_action( 'upgrader_process_complete', array( $this, 'purge' ), 10, 2 );
 
 		}
@@ -39,6 +41,11 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 		public function request(){
 
 			$remote = get_transient( $this->cache_key );
+
+			//Enable force check via update-core.php
+			if(isset($_GET['force-check']) && $_GET['force-check'] == 1){
+				$remote = false;
+			}
 
 			if( false === $remote || ! $this->cache_allowed ) {
 
@@ -126,10 +133,6 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 
 		public function update( $transient ) {
 
-			if ( empty($transient->checked ) ) {
-				return $transient;
-			}
-
 			$remote = $this->request();
 
 			if(
@@ -138,16 +141,37 @@ if( ! class_exists( 'mishaUpdateChecker' ) ) {
 				&& version_compare( $remote->requires, get_bloginfo( 'version' ), '<=' )
 				&& version_compare( $remote->requires_php, PHP_VERSION, '<' )
 			) {
+				//Update available
+				
 				$res = new stdClass();
 				$res->slug = $this->plugin_slug;
-				$res->plugin = plugin_basename( __FILE__ ); // misha-update-plugin/misha-update-plugin.php
+				$res->plugin = $this->plugin_basename_file; 
 				$res->new_version = $remote->version;
 				$res->tested = $remote->tested;
 				$res->package = $remote->download_url;
 
 				$transient->response[ $res->plugin ] = $res;
 
-	    }
+	    		}else{
+				//No update or no connection
+				
+				$res = new stdClass();
+				$res->id = $this->plugin_basename_file;
+				$res->slug = $this->plugin_slug;
+				$res->plugin = $this->plugin_basename_file;
+				$res->new_version = $this->version;
+				$res->url = '';
+				$res->package = '';
+				$res->icons = [];
+				$res->banners = [];
+				$res->banners_rtl = [];
+				$res->tested = '';
+				$res->requires_php = '';
+				$res->compatibility = new stdClass();
+
+				$transient->no_update[$res->plugin] = $res;
+				
+			}
 
 			return $transient;
 
